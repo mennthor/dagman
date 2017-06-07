@@ -7,7 +7,7 @@ name = "Testjob"
 exe = "python"
 exe_args = "test.py"
 njobs = 10
-job_args = {"seed": 10 + list(range(njobs)), "id": "run"}
+job_args = {"seed": list(range(njobs)), "id": "run"}
 outfile = "./results/outfile.txt"
 local_job_dir = "./jobfiles"
 
