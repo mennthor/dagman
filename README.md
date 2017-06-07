@@ -2,7 +2,7 @@
 DAGMan job creator wrapper
 
 This creates dagman job files for submission on a dagman controlled cluster.
-This heavily steals from mbrner's implementation [https://github.com/mbrner](https://github.com/mbrner).
+This heavily steals from mbrner's implementation (visit his page: [https://github.com/mbrner](https://github.com/mbrner)).
 But I tried my luck by rewriting it more for my needs, so it's probably not a very flexible solution.
 
 ## Fast dagman intro
