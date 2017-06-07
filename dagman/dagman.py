@@ -92,7 +92,7 @@ class DAGManJobCreator(object):
 
         # Expand the exe_args to match the keys in job_args exactly
         for key in job_args.keys():
-            exe_args += " -{} $({})".format(key, key)
+            exe_args += " --{}=$({})".format(key, key)
 
         # Write submit file, dagman options and argument list file
         self._write_one_job_submit(name, exe, exe_args, outfile, local_job_dir,
