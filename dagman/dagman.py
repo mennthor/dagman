@@ -46,8 +46,9 @@ class DAGManJobCreator(object):
             [1, ..., njobs]. Argument 'outfile' is specified seperately.
         outfile : string
             Full path to the output file path. Output files are written locally
-            on the computing node and copied on finish to reduce network load.
-            Every other output is written to dirname(outfile)
+            on the computing node. The called script must make sure, that it is
+            written to the correct output location. Every other output is
+            written to dirname(outfile) by daqman.
         local_job_dir : string
             Full path to where the local job submit files are created.
         getenv : bool, optional
@@ -88,7 +89,7 @@ class DAGManJobCreator(object):
         #    write the outfile to the submitter local directory.
         if "outfile" in job_args.keys():
             raise KeyError("'job_args' must not have special key 'outfile'.")
-        job_args["outfile"] = os.path.basename(outfile)
+        job_args["outfile"] = outfile
 
         # Expand the exe_args to match the keys in job_args exactly
         for key in job_args.keys():
@@ -166,12 +167,12 @@ class DAGManJobCreator(object):
         # out.append("request_disk = {}".format())  # <disk_in_KB>
         # out.append("")
 
-        out.append("should_transfer_files = {}".format("YES"))
-        out.append("when_to_transfer_output = {}".format("ON_EXIT"))
-        out.append("")
+        # out.append("should_transfer_files = {}".format("YES"))
+        # out.append("when_to_transfer_output = {}".format("ON_EXIT"))
+        # out.append("")
 
         # out.append("transfer_input_files={}".format())
-        outfile = os.path.join(scratch, "$(outfile)")
+        # outfile = os.path.join(scratch, "$(outfile)")
         out.append("transfer_output_files = {}".format(outfile))
         out.append("")
 
