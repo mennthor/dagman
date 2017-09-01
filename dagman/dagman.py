@@ -84,7 +84,7 @@ class DAGManJobCreator(object):
             path = os.path.join(job_dir, "{}".format(job_i))
 
             s = ["processname  = {}".format(job_i)]
-            s.append("executable   = bash")
+            s.append("executable   = /bin/bash")
             s.append("getenv       = True")
 
             s.append("output       = {}.out".format(path))
