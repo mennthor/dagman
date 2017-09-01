@@ -2,12 +2,9 @@ from dagman import dagman
 
 job_creator = dagman.DAGManJobCreator()
 
-
 job_name = "testjob"
 job_dir = "./jobfiles"
-
 script = "./test.py"
-
 njobs = 10
 job_args = {"seed": list(range(100, 100 + njobs)),
             "id": ["run_{:d}".format(i) for i in range(njobs)]}
