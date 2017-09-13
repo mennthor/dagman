@@ -31,7 +31,8 @@ class DAGManJobCreator(object):
         self.scan_interval = scan_interval
         return
 
-    def create_job(self, script, job_args, job_name, job_dir, overwrite=False):
+    def create_job(self, script, job_args, job_name, job_dir, exe="/bin/bash/",
+                   overwrite=False):
         """
         Parameters
         ----------
@@ -45,6 +46,8 @@ class DAGManJobCreator(object):
             Jobname.
         job_dir : string
             Path where the job files get written to.
+        exe : string, optional
+            Path to the bash used to excute the script. (default: '/bin/bash')
         overwrite : bool, optional
             If ``True`` use ``job_dir`` even if it already exists.
         """
@@ -66,8 +69,10 @@ class DAGManJobCreator(object):
             raise ValueError("Dir '{}' ".format(job_dir) +
                              "already exists and `overwrite` is False.")
 
+        exe = os.path.abspath(exe)
+
         # Create and write the job, submitter and infrastructure files
-        self._write_submit_scripts(job_name, job_dir, njobs)
+        self._write_submit_scripts(job_name, job_dir, njobs, exe)
         self._write_job_shell_scripts(script, job_name, job_dir, job_args,
                                       njobs)
 
@@ -76,7 +81,7 @@ class DAGManJobCreator(object):
         self._write_start_script(job_name, job_dir)
         return
 
-    def _write_submit_scripts(self, job_name, job_dir, njobs):
+    def _write_submit_scripts(self, job_name, job_dir, njobs, exe):
         """
         Write a submit script for each job.
         """
@@ -85,7 +90,7 @@ class DAGManJobCreator(object):
             path = os.path.join(job_dir, "{}".format(job_i))
 
             s = ["processname  = {}".format(job_i)]
-            s.append("executable   = /bin/bash")
+            s.append("executable   = {}".format(exe))
             s.append("getenv       = True")
 
             s.append("output       = {}.out".format(path))
