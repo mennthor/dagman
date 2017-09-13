@@ -1,5 +1,6 @@
 # coding: utf8
 import os
+import math
 
 
 class DAGManJobCreator(object):
@@ -80,7 +81,7 @@ class DAGManJobCreator(object):
         Write a submit script for each job.
         """
         for i in range(njobs):
-            job_i = "{}_{:d}".format(job_name, i)
+            job_i = self._append_id(job_name, i, njobs)
             path = os.path.join(job_dir, "{}".format(job_i))
 
             s = ["processname  = {}".format(job_i)]
@@ -107,7 +108,7 @@ class DAGManJobCreator(object):
         Write a standalone shell script with all the options per job.
         """
         for i in range(njobs):
-            job_i = "{}_{:d}".format(job_name, i)
+            job_i = self._append_id(job_name, i, njobs)
             path_i = os.path.join(job_dir, "{}".format(job_i) + ".sh")
 
             s = ["echo 'Start: ' `date`"]
@@ -133,7 +134,7 @@ class DAGManJobCreator(object):
         """
         s = []
         for i in range(njobs):
-            job_i = "{}_{:d}".format(job_name, i)
+            job_i = self._append_id(job_name, i, njobs)
             path_i = os.path.join(job_dir, "{}".format(job_i) + ".sub")
             s.append("JOB {} {}".format(job_i, path_i))
 
@@ -169,6 +170,27 @@ class DAGManJobCreator(object):
                  "-notification Complete", dag_jobs]
             f.write(" ".join(s))
         return
+
+    def _append_id(self, jobname, i, njobs):
+        """
+        Append a running job ID string with prepended zeros to ``job_name``.
+
+        Parameters
+        ----------
+        job_name : str
+            Name of the job, getting appended with a job ID.
+        i : int
+            Current job to get a job ID for.
+        njobs : int
+            Total number of jobs that get processed.
+
+        Returns
+        -------
+        jobid : string
+            Job ID string in format ``<jobname>_0...00<i>``.
+        """
+        lead_zeros = int(math.ceil(math.log10(njobs)))
+        return "{0:}_{2:0{1:d}d}".format(jobname, lead_zeros, i)
 
     def _check_and_makedir(self, dirname, overwrite):
         """
