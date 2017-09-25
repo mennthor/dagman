@@ -313,7 +313,7 @@ class PBSJobCreator(BaseJobCreator):
         overwrite : bool, optional
             If ``True`` use ``job_dir`` even if it already exists.
         """
-        script, jobdir, njobs, exe = super(PBSJobCreator, self).create_job(
+        script, job_dir, njobs, exe = super(PBSJobCreator, self).create_job(
             script, job_args, job_name, job_dir, exe, overwrite)
 
         for k in ["name", "walltime"]:
@@ -323,7 +323,7 @@ class PBSJobCreator(BaseJobCreator):
         # Create and write the job and submit files
         self._write_job_shell_scripts(script, job_name, job_dir, job_args,
                                       njobs, exe, queue)
-        # self._write_start_script(job_name, job_dir)
+        self._write_start_script(job_name, job_dir)
         return
 
     def _write_job_shell_scripts(self, script, job_name, job_dir,
@@ -365,12 +365,16 @@ class PBSJobCreator(BaseJobCreator):
                 f.write("\n".join(s))
         return
 
-    def _write_start_script(self, job_name):
+    def _write_start_script(self, job_name, job_dir):
         """
         Writes a script to execute on the submitter to starts all jobs.
         """
-        path = os.path.join(job_dir, job_name + ".submit.sh")
+        path = os.path.join(job_dir, "submit.sh")
+        job_files = os.path.join(job_dir, job_name)
         with open(path, "w") as f:
-            s = ["for f in {}*.sh".format(jobname)]
-            f.write("\n".join(s))
+            s = ['# Submit script for job: "{}"'.format(job_files)]
+            s.append('for f in {}*.sh; do'.format(job_files))
+            s.append('  qsub "$f";')
+            s.append('done')
+            f.write('\n'.join(s))
         return
