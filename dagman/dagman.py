@@ -4,19 +4,21 @@ import math
 import abc
 
 
-class BaseJobCreator(abs.ABC):
+class BaseJobCreator(object):
     """
     BaseJobCreator
 
     Base class providing some shared code for DAGMan and PBS job creators.
     """
+    __metaclass__ = abc.ABCMeta
+
     @abc.abstractmethod
     def create_job(self, script, job_args, job_name, job_dir, exe, overwrite):
         script = os.path.abspath(os.path.expandvars(script))
         job_dir = os.path.abspath(os.path.expandvars(job_dir))
 
         # All job args must be same length lists
-        keys = job_args.keys()
+        keys = list(job_args.keys())
         njobs = len(job_args[keys[0]])
         if len(keys) > 1:
             for key in keys[1:]:
@@ -260,7 +262,7 @@ class DAGManJobCreator(BaseJobCreator):
         return
 
 
-class PBSJobCreator(DAGManJobCreator):
+class PBSJobCreator(BaseJobCreator):
     """
     PBSJobCreator <<< DAGManJobCreator
 
@@ -278,15 +280,14 @@ class PBSJobCreator(DAGManJobCreator):
     scan_interval : int, optional
         Interval in which is looked, if new jobs can be started.
     """
-    def __init__(self, max_jobs_submitted=1000, submits_per_interval=100,
-                 scan_interval=5):
-        self.max_jobs_submitted = max_jobs_submitted
-        self.submits_per_interval = submits_per_interval
-        self.scan_interval = scan_interval
+    def __init__(self, nodes=1, cores=1, vmem="2000mb"):
+        self.nodes = nodes
+        self.cores = cores
+        self.vmem = vmem
         return
 
-    def create_job(self, script, job_args, job_name, job_dir, exe="/bin/bash/",
-                   queue, overwrite=False):
+    def create_job(self, script, job_args, job_name, job_dir, queue,
+                   exe="/bin/bash/", overwrite=False):
         """
         Parameters
         ----------
@@ -303,8 +304,8 @@ class PBSJobCreator(DAGManJobCreator):
         queue : dict
             Must have keys:
 
-            - 'queue_name', stirng: Name of the queue to use. Available queues
-              can be shown using shell command ``qstat -q``.
+            - 'name', string: Name of the queue to use. Available queues can be
+              shown using shell command ``qstat -q``.
             - 'walltime', string: Maximum time that the job is allow to run.
               Format: ``'H:MM:SS'``, eg. ``'8:00:00'`` for 8 hours.
         exe : string, optional
@@ -315,13 +316,14 @@ class PBSJobCreator(DAGManJobCreator):
         script, jobdir, njobs, exe = super(PBSJobCreator, self).create_job(
             script, job_args, job_name, job_dir, exe, overwrite)
 
-        if not np.all(np.in1d(["queue_name", "walltime"], queue.keys())):
-            raise ValueError("`queue` must have keys 'queue_name', 'walltime'.")
+        for k in ["name", "walltime"]:
+            if k not in queue.keys():
+                raise ValueError("`queue` missing key {}.".format(k))
 
         # Create and write the job and submit files
         self._write_job_shell_scripts(script, job_name, job_dir, job_args,
                                       njobs, exe, queue)
-        self._write_start_script(job_name, job_dir)
+        # self._write_start_script(job_name, job_dir)
         return
 
     def _write_job_shell_scripts(self, script, job_name, job_dir,
@@ -339,10 +341,11 @@ class PBSJobCreator(DAGManJobCreator):
             s.append("#PBS -m abe")  # mail on (a)bortion, (b)egin, (e)nd, (n)o
             s.append("#PBS -o {}.out".format(path))  # Log out
             s.append("#PBS -e {}.err".format(path))  # Error out
-            s.append("#PBS -q {}".format(queue["queue_name"]))
+            s.append("#PBS -q {}".format(queue["name"]))
             s.append("#PBS -l walltime={}".format(queue["walltime"]))
-            s.append("#PBS -l nodes=1:ppn=1")  # Nodes and cores per node
-            s.append("#PBS -l vmem=2000mb")    # Memory
+            # Nodes and cores per node and memory per job
+            s.append("#PBS -l nodes={}:ppn={}".format(self.nodes, self.cores))
+            s.append("#PBS -l vmem={}".format(self.vmem))
             s.append("#PBS -V")                # Pass environment variables
             s.append("")
             s.append("echo 'Start: ' `date`")
