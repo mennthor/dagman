@@ -280,7 +280,7 @@ class PBSJobCreator(BaseJobCreator):
     scan_interval : int, optional
         Interval in which is looked, if new jobs can be started.
     """
-    def __init__(self, nodes=1, cores=1, vmem="2000mb"):
+    def __init__(self, nodes=1, cores=1, vmem="2GB"):
         self.nodes = nodes
         self.cores = cores
         self.vmem = vmem
