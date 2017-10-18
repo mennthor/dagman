@@ -108,12 +108,15 @@ class DAGManJobCreator(BaseJobCreator):
         New submits per time interval. (default: 100)
     scan_interval : int, optional
         Interval in which is looked, if new jobs can be started.
+    mem : int
+        Requested RAM in GB.
     """
     def __init__(self, max_jobs_submitted=1000, submits_per_interval=100,
-                 scan_interval=5):
-        self.max_jobs_submitted = max_jobs_submitted
-        self.submits_per_interval = submits_per_interval
-        self.scan_interval = scan_interval
+                 scan_interval=5, mem=1):
+        self._max_jobs_submitted = max_jobs_submitted
+        self._submits_per_interval = submits_per_interval
+        self._scan_interval = scan_interval
+        self._mem = int(mem)
         return
 
     def create_job(self, script, job_args, job_name, job_dir, exe="/bin/bash/",
@@ -174,18 +177,20 @@ class DAGManJobCreator(BaseJobCreator):
             job_i = self._append_id(job_name, i, njobs)
             path = os.path.join(job_dir, "{}".format(job_i))
 
-            s = ["processname  = {}".format(job_i)]
+            s = ["processname    = {}".format(job_i)]
             s.append("executable   = {}".format(exe))
             s.append("getenv       = True")
 
-            s.append("output       = {}.out".format(path))
-            s.append("error        = {}.err".format(path))
-            s.append("log          = {}.log".format(path))
+            s.append("output         = {}.out".format(path))
+            s.append("error          = {}.err".format(path))
+            s.append("log            = {}.log".format(path))
 
-            s.append("universe     = vanilla")
-            s.append("notification = never")
+            s.append("request_memory = {:d}gb".format(self._mem))
 
-            s.append("arguments    = {}.sh".format(path))
+            s.append("universe       = vanilla")
+            s.append("notification   = never")
+
+            s.append("arguments      = {}.sh".format(path))
             s.append("queue")
 
             with open(path + ".sub", "w") as f:
@@ -241,11 +246,11 @@ class DAGManJobCreator(BaseJobCreator):
         path = os.path.join(job_dir, job_name + ".dag.config")
         with open(path, "w") as f:
             f.write("DAGMAN_MAX_JOBS_SUBMITTED={}\n".format(
-                self.max_jobs_submitted))
+                self._max_jobs_submitted))
             f.write("DAGMAN_MAX_SUBMIT_PER_INTERVAL={}\n".format(
-                self.submits_per_interval))
+                self._submits_per_interval))
             f.write("DAGMAN_USER_LOG_SCAN_INTERVAL={}\n".format(
-                self.scan_interval))
+                self._scan_interval))
         return
 
     def _write_start_script(self, job_name, job_dir):
