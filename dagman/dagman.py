@@ -140,7 +140,7 @@ class DAGManJobCreator(BaseJobCreator):
         job_dir = os.path.abspath(os.path.expandvars(job_dir))
 
         # All job args must be same length lists
-        keys = job_args.keys()
+        keys = list(job_args.keys())
         njobs = len(job_args[keys[0]])
         if len(keys) > 1:
             for key in keys[1:]:
