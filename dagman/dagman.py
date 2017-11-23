@@ -134,8 +134,11 @@ class DAGManJobCreator(BaseJobCreator):
             Jobname.
         job_dir : string
             Path where the job files get written to.
-        exe : string, optional
-            Path to the bash used to excute the script. (default: '/bin/bash')
+        exe : string or list, optional
+            Path(s) to the programs used to excute the script. If a list, only
+            the first entry is used in the 'executable' field of the submit
+            script. All following entries are prepended as absolute paths to
+            the 'arguments' field. (default: '/bin/bash')
         overwrite : bool, optional
             If ``True`` use ``job_dir`` even if it already exists.
         """
@@ -157,7 +160,9 @@ class DAGManJobCreator(BaseJobCreator):
             raise ValueError("Dir '{}' ".format(job_dir) +
                              "already exists and `overwrite` is False.")
 
-        exe = os.path.abspath(exe)
+        if not isinstance(exe, list):
+            exe = [exe]
+        exe = map(os.path.abspath, exe)
 
         # Create and write the job, submitter and infrastructure files
         self._write_submit_scripts(job_name, job_dir, njobs, exe)
@@ -178,7 +183,7 @@ class DAGManJobCreator(BaseJobCreator):
             path = os.path.join(job_dir, "{}".format(job_i))
 
             s = ["processname    = {}".format(job_i)]
-            s.append("executable   = {}".format(exe))
+            s.append("executable   = {}".format(exe.pop(0)))
             s.append("getenv       = True")
 
             s.append("output         = {}.out".format(path))
@@ -190,7 +195,7 @@ class DAGManJobCreator(BaseJobCreator):
             s.append("universe       = vanilla")
             s.append("notification   = never")
 
-            s.append("arguments      = {}.sh".format(path))
+            s.append("arguments      = {} {}.sh".format(" ".join(exe), path))
             s.append("queue")
 
             with open(path + ".sub", "w") as f:
