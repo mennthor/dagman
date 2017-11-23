@@ -183,8 +183,8 @@ class DAGManJobCreator(BaseJobCreator):
             path = os.path.join(job_dir, "{}".format(job_i))
 
             s = ["processname    = {}".format(job_i)]
-            s.append("executable   = {}".format(exe.pop(0)))
-            s.append("getenv       = True")
+            s.append("executable     = {}".format(exe.pop(0)))
+            s.append("getenv         = True")
 
             s.append("output         = {}.out".format(path))
             s.append("error          = {}.err".format(path))
