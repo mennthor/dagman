@@ -183,7 +183,7 @@ class DAGManJobCreator(BaseJobCreator):
             path = os.path.join(job_dir, "{}".format(job_i))
 
             s = ["processname    = {}".format(job_i)]
-            s.append("executable     = {}".format(exe.pop(0)))
+            s.append("executable     = {}".format(exe[0]))
             s.append("getenv         = True")
 
             s.append("output         = {}.out".format(path))
@@ -195,7 +195,8 @@ class DAGManJobCreator(BaseJobCreator):
             s.append("universe       = vanilla")
             s.append("notification   = never")
 
-            s.append("arguments      = {} {}.sh".format(" ".join(exe), path))
+            s.append("arguments      = {} {}.sh".format(" ".join(exe[1:]),
+                                                        path))
             s.append("queue")
 
             with open(path + ".sub", "w") as f:
