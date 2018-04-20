@@ -62,6 +62,7 @@ def pbs_submitter(path, glob_pat="*.sh", max_jobs=0):
         ret = subprocess.call(["qsub", jf])
         if ret == 0:
             print("  - Job {} / {} queued!".format(i, n_job_files))
+            n_jobs_in_queue += 1
         else:
             failed.append(jf)
             print("  - FAILED to queue the jobs, SKIPPING!")
