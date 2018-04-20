@@ -375,10 +375,10 @@ class PBSJobCreator(BaseJobCreator):
         s.append('  {}'.format(job_name))
         s.append('"""')
         s.append('')
-        s.append('from dagamn import pbs_submitter')
+        s.append('from dagman import pbs_submitter')
         s.append('')
         s.append('pbs_submitter(path={}, glob_pat="*.sh", max_jobs={})'.format(
-            job_dir, self.max_jobs_submitted))
+            '"' + job_dir + '"', self.max_jobs_submitted))
         s.append('')
         with open(path, "w") as f:
             f.write('\n'.join(s))
