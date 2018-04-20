@@ -323,7 +323,7 @@ class PBSJobCreator(BaseJobCreator):
         # Create and write the job and submit files
         self._write_job_shell_scripts(script, job_name, job_dir, job_args,
                                       njobs, exe, queue)
-        self._write_start_script(job_name, job_dir)
+        self._write_start_script(job_name, job_dir, queue)
         return
 
     def _write_job_shell_scripts(self, script, job_name, job_dir,
