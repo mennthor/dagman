@@ -377,7 +377,8 @@ class PBSJobCreator(BaseJobCreator):
         s.append('')
         s.append('from dagman import pbs_submitter')
         s.append('')
-        s.append('pbs_submitter(path="{}", queue="{}", '.format(jobdir, queue) +
+        s.append('pbs_submitter(' +
+                 'path="{}", queue="{}", '.format(job_dir, queue) +
                  'glob_pat="*.sh", max_jobs={})'.format(self._max_jobs))
         s.append('')
         with open(path, "w") as f:
