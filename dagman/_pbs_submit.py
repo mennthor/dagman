@@ -14,15 +14,15 @@ import subprocess
 import getpass
 
 
-def _get_n_jobs_in_queue():
+def _get_n_jobs_in_queue(queue=""):
     """ Parse `qstat` output to see running jobs """
-    out = subprocess.check_output(['qstat', '-u', getpass.getuser()])
+    out = subprocess.check_output(["qstat", queue, "-u", getpass.getuser()])
     regex = re.compile("^[0-9]*\.")
     out_jobs = filter(lambda s: re.match(regex, s), out.split('\n'))
     return max(0, len(out_jobs))
 
 
-def pbs_submitter(path, glob_pat="*.sh", max_jobs=0):
+def pbs_submitter(path, queue, glob_pat="*.sh", max_jobs=0):
     """
     Queues all jobfiles matching the glob pattern in path until all are queued.
 
@@ -30,6 +30,8 @@ def pbs_submitter(path, glob_pat="*.sh", max_jobs=0):
     ----------
     path : str
         Absolute path to the jobfiles.
+    queue : str
+        Which queue we are working in. See available queues with ``qstat -Q``.
     glob_pat : str, optional
         Pattern to match the jobfiles in ``path``. (default: ``'*.sh'``)
     max_jobs : int, optional
@@ -46,6 +48,7 @@ def pbs_submitter(path, glob_pat="*.sh", max_jobs=0):
     if len(jobfiles) == 0:
         raise RuntimeError("No jobfiles foun in given path.")
 
+    print("Start submitting to '{}'".format(queue))
     failed = []
     n_job_files = len(jobfiles)
     n_jobs_in_queue = _get_n_jobs_in_queue()

@@ -278,10 +278,10 @@ class PBSJobCreator(BaseJobCreator):
         Requested nodes and cores. (default: 1)
     """
     def __init__(self, max_jobs_submitted=0, vmem="2GB", nodes=1, cores=1):
-        self.max_jobs_submitted = max_jobs_submitted
-        self.nodes = nodes
-        self.cores = cores
-        self.vmem = vmem
+        self._max_jobs_submitted = max_joed
+        self._nodes = nodes
+        self._cores = cores
+        self._vmem = vmem
         return
 
     def create_job(self, script, job_args, job_name, job_dir, queue,
@@ -344,8 +344,8 @@ class PBSJobCreator(BaseJobCreator):
             s.append("#PBS -q {}".format(queue["name"]))
             s.append("#PBS -l walltime={}".format(queue["walltime"]))
             # Nodes and cores per node and memory per job
-            s.append("#PBS -l nodes={}:ppn={}".format(self.nodes, self.cores))
-            s.append("#PBS -l vmem={}".format(self.vmem))
+            s.append("#PBS -l nodes={}:ppn={}".format(self._nodes, self._cores))
+            s.append("#PBS -l vmem={}".format(self._vmem))
             s.append("#PBS -V")                # Pass environment variables
             s.append("")
             s.append("echo 'Start: ' `date`")
@@ -365,7 +365,7 @@ class PBSJobCreator(BaseJobCreator):
                 f.write("\n".join(s))
         return
 
-    def _write_start_script(self, job_name, job_dir):
+    def _write_start_script(self, job_name, job_dir, queue):
         """
         Writes a script to execute on the submitter to starts all jobs.
         """
@@ -377,8 +377,8 @@ class PBSJobCreator(BaseJobCreator):
         s.append('')
         s.append('from dagman import pbs_submitter')
         s.append('')
-        s.append('pbs_submitter(path={}, glob_pat="*.sh", max_jobs={})'.format(
-            '"' + job_dir + '"', self.max_jobs_submitted))
+        s.append('pbs_submitter(path="{}", queue="{}", '.format(jobdir, queue) +
+                 'glob_pat="*.sh", max_jobs={})'.format(self._max_jobs))
         s.append('')
         with open(path, "w") as f:
             f.write('\n'.join(s))
