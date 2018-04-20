@@ -278,7 +278,7 @@ class PBSJobCreator(BaseJobCreator):
         Requested nodes and cores. (default: 1)
     """
     def __init__(self, max_jobs_submitted=0, vmem="2GB", nodes=1, cores=1):
-        self._max_jobs_submitted = max_jobs_submitted
+        self._max_jobs = max_jobs_submitted
         self._nodes = nodes
         self._cores = cores
         self._vmem = vmem
