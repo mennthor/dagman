@@ -51,7 +51,7 @@ def pbs_submitter(path, queue, glob_pat="*.sh", max_jobs=0):
     print("Start submitting to '{}'".format(queue))
     failed = []
     n_job_files = len(jobfiles)
-    n_jobs_in_queue = _get_n_jobs_in_queue()
+    n_jobs_in_queue = _get_n_jobs_in_queue(queue)
     for i, jf in enumerate(jobfiles):
         print("Queuing jobfile:\n  {}".format(jf))
         if max_jobs > 0:
@@ -60,7 +60,7 @@ def pbs_submitter(path, queue, glob_pat="*.sh", max_jobs=0):
                 print("  - User limit reached (max jobs: " +
                       "{}). Trying again in 1 min.".format(max_jobs))
                 time.sleep(60)
-                n_jobs_in_queue = _get_n_jobs_in_queue()
+                n_jobs_in_queue = _get_n_jobs_in_queue(queue)
         # Queue the job
         ret = subprocess.call(["qsub", jf])
         if ret == 0:
