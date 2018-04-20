@@ -13,7 +13,10 @@ class BaseJobCreator(object):
     __metaclass__ = abc.ABCMeta
 
     @abc.abstractmethod
-    def create_job(self, script, job_args, job_name, job_dir, exe, overwrite):
+    def create_job(self):
+        pass
+
+    def _check_input(self, script, job_dir, job_args, overwrite):
         script = os.path.abspath(os.path.expandvars(script))
         job_dir = os.path.abspath(os.path.expandvars(job_dir))
 
@@ -32,11 +35,9 @@ class BaseJobCreator(object):
             raise ValueError("Dir '{}' ".format(job_dir) +
                              "already exists and `overwrite` is False.")
 
-        exe = os.path.abspath(exe)
-        return script, job_dir, njobs, exe
+        return script, job_dir, job_args, njobs
 
-    @staticmethod
-    def _append_id(jobname, i, njobs):
+    def _append_id(self, jobname, i, njobs):
         """
         Append a running job ID string with prepended zeros to ``job_name``.
 
@@ -57,8 +58,7 @@ class BaseJobCreator(object):
         lead_zeros = int(math.ceil(math.log10(njobs)))
         return "{0:}_{2:0{1:d}d}".format(jobname, lead_zeros, i)
 
-    @staticmethod
-    def _check_and_makedir(dirname, overwrite):
+    def _check_and_makedir(self, dirname, overwrite):
         """
         Check if ``dirname`` exists and create if it does not and overwrite is
         ``True``.
@@ -142,23 +142,8 @@ class DAGManJobCreator(BaseJobCreator):
         overwrite : bool, optional
             If ``True`` use ``job_dir`` even if it already exists.
         """
-        script = os.path.abspath(os.path.expandvars(script))
-        job_dir = os.path.abspath(os.path.expandvars(job_dir))
-
-        # All job args must be same length lists
-        keys = list(job_args.keys())
-        njobs = len(job_args[keys[0]])
-        if len(keys) > 1:
-            for key in keys[1:]:
-                if len(job_args[key]) != njobs:
-                    raise ValueError(
-                        "Arg list for '{}'".format(key) +
-                        " has not the same length as for '{}'.".format(keys))
-
-        # Check jobdir
-        if not self._check_and_makedir(job_dir, overwrite):
-            raise ValueError("Dir '{}' ".format(job_dir) +
-                             "already exists and `overwrite` is False.")
+        _out = self._check_input(script, job_dir, job_args, overwrite)
+        script, job_dir, job_args, njobs = _out
 
         if not isinstance(exe, list):
             exe = [exe]
@@ -280,18 +265,20 @@ class PBSJobCreator(BaseJobCreator):
     Create PBS job files that can be directly submitted:
 
     - One shell script per job with all job options with PBS command header.
-    - Single shell script that submits the jobs.
+    - Single python script that submits the jobs.
 
     Parameters
     ----------
-    max_jobs_submitted : int, optional
-        Maximum number of jobs submitted simultaniously. (default: 10000)
-    submits_per_interval : int, optional
-        New submits per time interval. (default: 100)
-    scan_interval : int, optional
-        Interval in which is looked, if new jobs can be started.
+    max_jobs_submit : int, optional
+        Maximum number of jobs to queue at the same time for the current user.
+        If not ``>0``, all jobs are queued at once. (default: 0)
+    vmem : string, optional
+        Virtual memory to request. (default: ``'2GB'``)
+    nodes, cores : int, optional
+        Requested nodes and cores. (default: 1)
     """
-    def __init__(self, nodes=1, cores=1, vmem="2GB"):
+    def __init__(self, max_jobs_submitted=0, vmem="2GB", nodes=1, cores=1):
+        self.max_jobs_submitted = max_jobs_submitted
         self.nodes = nodes
         self.cores = cores
         self.vmem = vmem
@@ -324,8 +311,10 @@ class PBSJobCreator(BaseJobCreator):
         overwrite : bool, optional
             If ``True`` use ``job_dir`` even if it already exists.
         """
-        script, job_dir, njobs, exe = super(PBSJobCreator, self).create_job(
-            script, job_args, job_name, job_dir, exe, overwrite)
+        _out = self._check_input(script, job_dir, job_args, overwrite)
+        script, job_dir, job_args, njobs = _out
+
+        exe = os.path.abspath(exe)
 
         for k in ["name", "walltime"]:
             if k not in queue.keys():
@@ -380,12 +369,17 @@ class PBSJobCreator(BaseJobCreator):
         """
         Writes a script to execute on the submitter to starts all jobs.
         """
-        path = os.path.join(job_dir, "submit.sh")
-        job_files = os.path.join(job_dir, job_name)
+        path = os.path.join(job_dir, "submit.py")
+        s = ['"""']
+        s.append('PBS submitter script for')
+        s.append('  {}'.format(job_name))
+        s.append('"""')
+        s.append('')
+        s.append('from dagamn import pbs_submitter')
+        s.append('')
+        s.append('pbs_submitter(path={}, glob_pat="*.sh", max_jobs={})'.format(
+            job_dir, self.max_jobs_submitted))
+        s.append('')
         with open(path, "w") as f:
-            s = ['# Submit script for job: "{}"'.format(job_files)]
-            s.append('for f in {}*.sh; do'.format(job_files))
-            s.append('  qsub "$f";')
-            s.append('done')
             f.write('\n'.join(s))
         return
