@@ -41,7 +41,7 @@ def pbs_submitter(path, glob_pat="*.sh", max_jobs=0):
     failed : list
         List of jobfiles failed to queue.
     """
-    jobfiles = glob(os.path.join(path, glob_pat))
+    jobfiles = sorted(glob(os.path.join(path, glob_pat)))
 
     if len(jobfiles) == 0:
         raise RuntimeError("No jobfiles foun in given path.")
