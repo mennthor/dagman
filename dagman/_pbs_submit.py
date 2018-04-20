@@ -57,6 +57,7 @@ def pbs_submitter(path, glob_pat="*.sh", max_jobs=0):
                 print("  - User limit reached (max jobs: " +
                       "{}). Trying again in 1 min.".format(max_jobs))
                 time.sleep(60)
+                n_jobs_in_queue = _get_n_jobs_in_queue()
         # Queue the job
         ret = subprocess.call(["qsub", jf])
         if ret == 0:
