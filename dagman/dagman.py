@@ -129,7 +129,8 @@ class DAGManJobCreator(BaseJobCreator):
         job_args : dict
             Dict ``key: arglist`` with arguments in lists for each job, gets
             expanded to: ``--key=arg[i]`` for each argument ``i`` in the
-            argument list.
+            argument list. Exception is, when ``'__FLAG__'`` is stored in
+            ``arg[i]``, then only ``--key`` is expanded.
         job_name : string
             Jobname.
         job_dir : string
@@ -203,7 +204,11 @@ class DAGManJobCreator(BaseJobCreator):
             # Write actual command
             exe = "python {}".format(script)
             for key in job_args.keys():
-                exe += " --{}={}".format(key, job_args[key][i])
+                # __FLAG__ indicates a bool flag that can't be used explicit
+                if job_args[key][i] == "__FLAG__":
+                    exe += " --{}".format(key)
+                else:
+                    exe += " --{}={}".format(key, job_args[key][i])
             s.append(exe)
 
             s.append("echo")
@@ -294,7 +299,8 @@ class PBSJobCreator(BaseJobCreator):
         job_args : dict
             Dict ``key: arglist`` with arguments in lists for each job, gets
             expanded to: ``--key=arg[i]`` for each argument ``i`` in the
-            argument list.
+            argument list. Exception is, when ``'__FLAG__'`` is stored in
+            ``arg[i]``, then only ``--key`` is expanded.
         job_name : string
             Jobname.
         job_dir : string
@@ -353,8 +359,13 @@ class PBSJobCreator(BaseJobCreator):
             s.append("echo")
             # Write actual command
             exe = "python {}".format(script)
+
             for key in job_args.keys():
-                exe += " --{}={}".format(key, job_args[key][i])
+                # __FLAG__ indicates a bool flag that can't be used explicit
+                if job_args[key][i] == "__FLAG__":
+                    exe += " --{}".format(key)
+                else:
+                    exe += " --{}={}".format(key, job_args[key][i])
             s.append(exe)
 
             s.append("echo")
