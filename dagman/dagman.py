@@ -17,7 +17,8 @@ class BaseJobCreator(object):
         pass
 
     def _check_input(self, job_exe, job_args,
-                     job_setup_pre, job_setup_post, job_dir, overwrite):
+                     job_setup_pre, job_setup_post, extra_sub_args,
+                     job_dir, overwrite):
         """
         Some inoput checks and ensuring we can work with consisten arguments.
         """
@@ -31,6 +32,9 @@ class BaseJobCreator(object):
         if not isinstance(job_setup_post, list):
             job_setup_post = [
                 job_setup_post] if job_setup_post is not None else []
+        if not isinstance(extra_sub_args, list):
+            extra_sub_args = [
+                extra_sub_args] if extra_sub_args is not None else []
 
         # All job args must be same length lists
         keys = list(job_args.keys())
@@ -47,7 +51,8 @@ class BaseJobCreator(object):
             raise ValueError("Dir '{}' ".format(job_dir)
                              + "already exists and `overwrite` is False.")
 
-        return job_exe, job_args, job_setup_pre, job_setup_post, job_dir, njobs
+        return (job_exe, job_args, job_setup_pre, job_setup_post,
+                extra_sub_args, job_dir, njobs)
 
     def _append_id(self, jobname, i, njobs):
         """
@@ -133,7 +138,7 @@ class DAGManJobCreator(BaseJobCreator):
         return
 
     def create_job(self, job_exe, job_args, job_name, job_dir,
-                   job_setup_pre=None, job_setup_post=None,
+                   job_setup_pre=None, job_setup_post=None, extra_sub_args=None,
                    bash_exe="/bin/bash", overwrite=False):
         """
         Create all necessary jobfiles in a single directory to run the complete
@@ -204,6 +209,12 @@ class DAGManJobCreator(BaseJobCreator):
             the actual command line created with ``job_exe``and ``job_args``
             respectively. Each list entry is written on a new line.
             (default: None)
+        extra_sub_args : list or None
+            List of extra arguments that get put into the submit files. Each
+            item gets written without modification on a new line. Note: It is
+            not checked, if any argument overwrites one of the submit arguments
+            that are set with the other arguments of this method. This can lead
+            to double entries in the resulting submit file. (default: None)
         job_dir : string
             Path where the job files get written to.
         bash_exe : str
@@ -212,12 +223,14 @@ class DAGManJobCreator(BaseJobCreator):
         overwrite : bool, optional
             If ``True`` use ``job_dir`` even if it already exists.
         """
-        _out = self._check_input(job_exe, job_args, job_setup_pre,
-                                 job_setup_post, job_dir, overwrite)
-        job_exe, job_args, job_setup_pre, job_setup_post, job_dir, njobs = _out
+        (job_exe, job_args, job_setup_pre, job_setup_post, extra_sub_args,
+            job_dir, njobs) = self._check_input(
+                job_exe, job_args, job_setup_pre, job_setup_post,
+                extra_sub_args, job_dir, overwrite)
 
         # Create and write the job, submitter and infrastructure files
-        self._write_submit_scripts(job_name, job_dir, njobs, bash_exe)
+        self._write_submit_scripts(
+            job_name, job_dir, extra_sub_args, njobs, bash_exe)
         self._write_job_shell_scripts(job_exe, job_name, job_dir, job_args,
                                       njobs, job_setup_pre, job_setup_post)
 
@@ -226,7 +239,8 @@ class DAGManJobCreator(BaseJobCreator):
         self._write_start_script(job_name, job_dir)
         return
 
-    def _write_submit_scripts(self, job_name, job_dir, njobs, bash_exe):
+    def _write_submit_scripts(
+            self, job_name, job_dir, extra_sub_args, njobs, bash_exe):
         """
         Write a submit script for each job.
         """
@@ -246,6 +260,10 @@ class DAGManJobCreator(BaseJobCreator):
 
             s.append("universe       = vanilla")
             s.append("notification   = never")
+
+            if extra_sub_args:
+                for extra_arg in extra_sub_args:
+                    s.append(extra_arg)
 
             s.append("arguments      = {}.sh".format(job_i_fname))
             s.append("queue")
