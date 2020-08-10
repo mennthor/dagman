@@ -361,6 +361,8 @@ class DAGManJobCreator(BaseJobCreator):
             s = ["condor_submit_dag", "-config", dag_conf,
                  "-notification Complete", dag_jobs]
             f.write(" ".join(s))
+        # Make it user executable (stackoverflow.com/questions/12791997)
+        os.chmod(path, 0o755)
         return
 
 
