@@ -2,5 +2,5 @@
 
 from __future__ import absolute_import
 
-from .dagman import DAGManJobCreator, PBSJobCreator
-from ._pbs_submit import pbs_submitter
+from .dagman import DAGManJobCreator
+from .pbs import PBSJobCreator, pbs_submitter
