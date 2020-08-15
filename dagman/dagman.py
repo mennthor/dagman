@@ -146,7 +146,8 @@ class DAGManJobCreator(BaseJobCreator):
         print("  {}x job submit scripts '{}'".format(njobs, _sn_sub))
         print("  {}x job compute scripts '{}'".format(njobs, _sn_sh))
         print(off * " " + "1x dagman config '{}'".format(_sn_cfg))
-        print("Now login to your submit node and run `./{}`".format(_sn_start))
+        print("Now login to your submit node and run")
+        print("  `{}`".format(os.path.join(job_dir, _sn_start)))
         print("You can also run a single `.sh` file directly or submit a "
               "single job only via `condor_submit -file <name>.sub`")
 
