@@ -18,19 +18,16 @@ class DAGManJobCreator(BaseJobCreator):
 
     Parameters
     ----------
-    max_jobs_submitted : int, optional
-        Maximum number of jobs submitted simultaniously. (default: 10000)
-    submits_per_interval : int, optional
-        New submits per time interval. (default: 100)
-    scan_interval : int, optional
-        Interval in seconds in which the submitter checks if new jobs can be
-        started. (default: 5)
+    dag_config : dict, optional
+        Dictionary with dagman config options as keys and their corresponding
+        values. Available options can be found at
+        https://research.cs.wisc.edu/htcondor/manual/v7.6/3_3Configuration.html#sec:DAGMan-Config-File-Entries
+        No checking of valid keys is done, invalid keys will be ignored by
+        dagman or cause an error on job dispatch using the condor CLI.
+        All keys are converted to upper case. (default: `{}`)
     """
-    def __init__(self, max_jobs_submitted=1000, submits_per_interval=100,
-                 scan_interval=5):
-        self._max_jobs_submitted = max_jobs_submitted
-        self._submits_per_interval = submits_per_interval
-        self._scan_interval = scan_interval
+    def __init__(self, dag_config={}):
+        self._dag_config = dag_config.copy()
         return
 
     def create_job(self, job_exe, job_args, job_name, job_dir,
@@ -260,13 +257,10 @@ class DAGManJobCreator(BaseJobCreator):
         distribution.
         """
         path = os.path.join(job_dir, job_name + ".dag.config")
-        with open(path, "w") as f:
-            f.write("DAGMAN_MAX_JOBS_SUBMITTED={}\n".format(
-                self._max_jobs_submitted))
-            f.write("DAGMAN_MAX_SUBMIT_PER_INTERVAL={}\n".format(
-                self._submits_per_interval))
-            f.write("DAGMAN_USER_LOG_SCAN_INTERVAL={}\n".format(
-                self._scan_interval))
+        if self._dag_config:
+            with open(path, "w") as f:
+                for cfg_name, val in self._dag_config.items():
+                    f.write("{}={}\n".format(cfg_name.upper(), val))
         return os.path.basename(path)  # Return for summary output
 
     def _write_start_script(self, job_name, job_dir):
