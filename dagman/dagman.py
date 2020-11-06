@@ -26,6 +26,7 @@ class DAGManJobCreator(BaseJobCreator):
         dagman or cause an error on job dispatch using the condor CLI.
         All keys are converted to upper case. (default: `{}`)
     """
+
     def __init__(self, dag_config={}):
         self._dag_config = dag_config.copy()
         return
@@ -257,10 +258,9 @@ class DAGManJobCreator(BaseJobCreator):
         distribution.
         """
         path = os.path.join(job_dir, job_name + ".dag.config")
-        if self._dag_config:
-            with open(path, "w") as f:
-                for cfg_name, val in self._dag_config.items():
-                    f.write("{}={}\n".format(cfg_name.upper(), val))
+        with open(path, "w") as f:
+            for cfg_name, val in self._dag_config.items():
+                f.write("{}={}\n".format(cfg_name.upper(), val))
         return os.path.basename(path)  # Return for summary output
 
     def _write_start_script(self, job_name, job_dir):
