@@ -19,7 +19,7 @@ class BaseJobCreator(object):
 
     def _check_input(self, job_exe, job_args,
                      job_setup_pre, job_setup_post, extra_sub_args,
-                     job_dir, ram, overwrite):
+                     job_dir, ram, overwrite, verbose):
         """
         Some inoput checks and ensuring we can work with consisten arguments.
         """
@@ -48,7 +48,7 @@ class BaseJobCreator(object):
                         + " has not the same length as for '{}'.".format(keys))
 
         # Check jobdir
-        if not self._check_and_makedir(job_dir, overwrite):
+        if not self._check_and_makedir(job_dir, overwrite, verbose):
             raise ValueError("Dir '{}' ".format(job_dir)
                              + "already exists and `overwrite` is False.")
 
@@ -115,7 +115,7 @@ class BaseJobCreator(object):
         lead_zeros = self._get_lead_zeros(njobs)
         return "{0:}_{2:0{1:d}d}".format(jobname, lead_zeros, i)
 
-    def _check_and_makedir(self, dirname, overwrite):
+    def _check_and_makedir(self, dirname, overwrite, verbose):
         """
         Check if ``dirname`` exists and create if it does not and overwrite is
         ``True``.
@@ -126,6 +126,9 @@ class BaseJobCreator(object):
             Path to the directory.
         overwrite : bool, optional
             If ``True`` use ``dirname`` even if it already exists.
+        verbose : bool, optional
+            If `True`, print a small summary and a hint on how to start the DAG.
+            Else, nothing is printed. (default: `True`)
 
         Returns
         -------
@@ -136,10 +139,12 @@ class BaseJobCreator(object):
         dirname = os.path.abspath(dirname)
         if not os.path.exists(dirname):
             os.makedirs(dirname)
-            print("Created and using dir '{}'.".format(dirname))
+            if verbose:
+                print("Created and using dir '{}'.".format(dirname))
             return True
         elif overwrite:
-            print("Using existing dir '{}'.".format(dirname))
+            if verbose:
+                print("Using existing dir '{}'.".format(dirname))
             return True
         else:
             return False

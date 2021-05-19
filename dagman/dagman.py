@@ -128,7 +128,7 @@ class DAGManJobCreator(BaseJobCreator):
         (job_exe, job_args, job_setup_pre, job_setup_post, extra_sub_args,
             job_dir, ram, njobs) = self._check_input(
                 job_exe, job_args, job_setup_pre, job_setup_post,
-                extra_sub_args, job_dir, ram, overwrite)
+                extra_sub_args, job_dir, ram, overwrite, verbose)
 
         # Create and write the job, submitter and infrastructure files
         _sn_sub = self._write_submit_scripts(
