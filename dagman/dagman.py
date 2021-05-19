@@ -33,7 +33,8 @@ class DAGManJobCreator(BaseJobCreator):
 
     def create_job(self, job_exe, job_args, job_name, job_dir,
                    job_setup_pre=None, job_setup_post=None, extra_sub_args=None,
-                   bash_exe="/bin/bash", ram="1GB", overwrite=False):
+                   bash_exe="/bin/bash", ram="1GB",
+                   overwrite=False, verbose=True):
         """
         Create all necessary jobfiles in a single directory to run the complete
         job on HTCcondor scheduler.
@@ -120,6 +121,9 @@ class DAGManJobCreator(BaseJobCreator):
             job argument lists and is set per job. (default: '1GB')
         overwrite : bool, optional
             If ``True`` use ``job_dir`` even if it already exists.
+        verbose : bool, optional
+            If `True`, print a small summary and a hint on how to start the DAG.
+            Else, nothing is printed. (default: `True`)
         """
         (job_exe, job_args, job_setup_pre, job_setup_post, extra_sub_args,
             job_dir, ram, njobs) = self._check_input(
@@ -137,17 +141,18 @@ class DAGManJobCreator(BaseJobCreator):
         _sn_cfg = self._write_dagman_config(job_name, job_dir)
         _sn_start = self._write_start_script(job_name, job_dir)
 
-        off = self._get_lead_zeros(njobs) + 1
-        print("Generated files:")
-        print(off * " " + "1x submit script '{}'".format(_sn_start))
-        print(off * " " + "1x job list '{}'".format(_sn_job))
-        print("  {}x job submit scripts '{}'".format(njobs, _sn_sub))
-        print("  {}x job compute scripts '{}'".format(njobs, _sn_sh))
-        print(off * " " + "1x dagman config '{}'".format(_sn_cfg))
-        print("Now login to your submit node and run")
-        print("  `{}`".format(os.path.join(job_dir, _sn_start)))
-        print("You can also run a single `.sh` file directly or submit a "
-              "single job only via `condor_submit -file <name>.sub`")
+        if verbose:
+            off = self._get_lead_zeros(njobs) + 1
+            print("Generated files:")
+            print(off * " " + "1x submit script '{}'".format(_sn_start))
+            print(off * " " + "1x job list '{}'".format(_sn_job))
+            print("  {}x job submit scripts '{}'".format(njobs, _sn_sub))
+            print("  {}x job compute scripts '{}'".format(njobs, _sn_sh))
+            print(off * " " + "1x dagman config '{}'".format(_sn_cfg))
+            print("Now login to your submit node and run")
+            print("  `{}`".format(os.path.join(job_dir, _sn_start)))
+            print("You can also run a single `.sh` file directly or submit a "
+                  "single job only via `condor_submit -file <name>.sub`")
 
         return
 
