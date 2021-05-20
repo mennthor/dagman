@@ -75,13 +75,13 @@ class DAGManJobCreator(BaseJobCreator):
           ``./jobname.dag.start.sh -max_idle 100``.
         - N ``jobname_suffix.sh`` shell scripts with the actual command, where
           suffix is zero padded from 1 to N.
-        - N ``jobname_suffix.job`` job scripts with the scheduler commands,
-          where suffix is zero padded from 1 to N.
+        - N ``jobname_suffix.sub`` submitter scripts with the scheduler
+          commands, where suffix is zero padded from 1 to N.
 
         The scheduler reads the global config ``jobname.dag.config``, then looks
         up the required jobs from ``jobname.dag.jobs`` and for each job it
-        starts, it uses the ``jobname_suffix.job`` file to load the job
-        parameters and then each job file simply states to execute the
+        starts, it uses the ``jobname_suffix.sub`` file to load the job
+        parameters and then each submit file simply states to execute the
         corresponding ``jobname_suffix.sh`` script, in which the actual
         computing command is stated.
 
