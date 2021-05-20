@@ -70,6 +70,9 @@ class DAGManJobCreator(BaseJobCreator):
           command to submit the job to the scheduler (on the submit node). This
           does not have to be used, it's just that I always keep forgetting the
           proper command, so it got bundled too.
+          It is made executable and passes all further cmds given on script
+          invocation to ``condor_submit_dag``, eg.
+          ``./jobname.dag.start.sh -max_idle 100``.
         - N ``jobname_suffix.sh`` shell scripts with the actual command, where
           suffix is zero padded from 1 to N.
         - N ``jobname_suffix.job`` job scripts with the scheduler commands,
@@ -276,8 +279,8 @@ class DAGManJobCreator(BaseJobCreator):
         dag_conf = os.path.join(job_dir, job_name + ".dag.config")
         dag_jobs = os.path.join(job_dir, job_name + ".dag.jobs")
         with open(path, "w") as f:
-            s = ["condor_submit_dag", "-config", dag_conf,
-                 "-notification Complete", dag_jobs]
+            # Use a "$@" to inject more params manually if needed later
+            s = ["condor_submit_dag", "-config", dag_conf, '"$@"', dag_jobs]
             f.write(" ".join(s))
         # Make it user executable (stackoverflow.com/questions/12791997)
         os.chmod(path, 0o755)
