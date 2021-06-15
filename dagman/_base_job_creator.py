@@ -67,8 +67,8 @@ class BaseJobCreator(object):
             ram_i = ram_i.upper().strip().replace(" ", "")
             match = re.findall(valid, ram_i)
             if len(match) != 1:
-                raise ValueError("Given `ram` argument '{}' invalid. Must be of "
-                                 "format 'number[MB|GB]'.".format(ram_i))
+                raise ValueError("Given `ram` argument '{}' invalid. Must be "
+                                 "of format 'number[MB|GB]'.".format(ram_i))
             else:
                 ram[i] = match[0]
         if len(ram) == 1:  # Just to have a consistent arg for each job

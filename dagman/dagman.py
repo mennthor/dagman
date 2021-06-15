@@ -204,7 +204,9 @@ class DAGManJobCreator(BaseJobCreator):
             job_i = self._append_id(job_name, i, njobs)
             path_i = os.path.join(job_dir, "{}".format(job_i) + ".sh")
 
-            s = ["echo 'Start: ' `date`"]
+            s = ["set -e"]  # For the rescue we want it to fail
+            s.append("echo")
+            s.append("echo 'Start: ' `date`")
             s.append("echo")
 
             # Write pre commands if any
@@ -238,6 +240,7 @@ class DAGManJobCreator(BaseJobCreator):
                 s.append("echo")
 
             s.append("echo 'Finished: ' `date`")
+            s.append("echo")  # Finishing new line
 
             with open(path_i, "w") as f:
                 f.write("\n".join(s))
