@@ -484,6 +484,14 @@ class DAGManJobCreatorCompact(BaseJobCreator):
             os.path.join(job_dir, "log", "$({}).log".format(
                 self._VAR_INT_JOB_ID))))
 
+        # I guess these have to exist beforehand
+        self._check_and_makedir(os.path.join(job_dir, "out"),
+                                overwrite=True, verbose=False)
+        self._check_and_makedir(os.path.join(job_dir, "err"),
+                                overwrite=True, verbose=False)
+        self._check_and_makedir(os.path.join(job_dir, "log"),
+                                overwrite=True, verbose=False)
+
         # RAM requests per job are encoded in the jobs VARS lines with a special
         # key. A warning is issued when the user specifies the same key as an
         # argument (hopefully unlikely)
