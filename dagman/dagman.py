@@ -319,7 +319,8 @@ class DAGManJobCreatorCompact(BaseJobCreator):
 
         # Special VARS name to set RAM for each job differently
         self._VAR_INT_RAM = "__SUB_RAM__"
-        self._VAR_INT_ALL = {self._VAR_INT_RAM}
+        self._VAR_INT_JOB_ID = "__SUB_JOB_ID__"
+        self._VAR_INT_ALL = {self._VAR_INT_RAM, self._VAR_INT_JOB_ID}
 
         return
 
@@ -471,9 +472,17 @@ class DAGManJobCreatorCompact(BaseJobCreator):
         s.append("executable     = {}".format(bash_exe))
         s.append("getenv         = True")
 
-        s.append("output         = {}.out".format(job_fname))
-        s.append("error          = {}.err".format(job_fname))
-        s.append("log            = {}.log".format(job_fname))
+        # Put out, err, log in subfolders, each file names after job ID as in
+        # DAG job list file (via special _VAR_INT_JOB_ID argument)
+        s.append("output         = {}".format(
+            os.path.join(job_dir, "out", "$({}).out".format(
+                self._VAR_INT_JOB_ID))))
+        s.append("error          = {}".format(
+            os.path.join(job_dir, "err", "$({}).err".format(
+                self._VAR_INT_JOB_ID))))
+        s.append("log            = {}".format(
+            os.path.join(job_dir, "log", "$({}).log".format(
+                self._VAR_INT_JOB_ID))))
 
         # RAM requests per job are encoded in the jobs VARS lines with a special
         # key. A warning is issued when the user specifies the same key as an
@@ -567,6 +576,7 @@ class DAGManJobCreatorCompact(BaseJobCreator):
 
             # Pass special job requirement values
             arg_str += ' {}="{}"'.format(self._VAR_INT_RAM, ram[i])
+            arg_str += ' {}="{}"'.format(self._VAR_INT_JOB_ID, job_i)
             s.append(arg_str)
 
         script_name = os.path.join(job_dir, job_name + ".dag.jobs")
