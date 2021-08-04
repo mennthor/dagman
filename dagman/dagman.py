@@ -566,7 +566,7 @@ class DAGManJobCreatorCompact(BaseJobCreator):
                 arg_str += ' {}="{}"'.format(key, val[i])
 
             # Pass special job requirement values
-            arg_str += " {}={}".format(self._VAR_INT_RAM, ram[i])
+            arg_str += ' {}="{}"'.format(self._VAR_INT_RAM, ram[i])
             s.append(arg_str)
 
         script_name = os.path.join(job_dir, job_name + ".dag.jobs")
