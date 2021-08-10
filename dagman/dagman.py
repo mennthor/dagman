@@ -579,8 +579,10 @@ class DAGManJobCreatorCompact(BaseJobCreator):
             # Now the argument list line
             arg_str = "VARS {}".format(job_i)
             for key, val in job_args.items():
-                # All args must be within double quotes
-                arg_str += ' {}="{}"'.format(key, val[i])
+                # All args must be within double quotes so we need to quote
+                # all already existing double quotes in the actual parameters
+                _val = val[i].replace('"', '\\"')  # Becomes \" in the DAG file
+                arg_str += ' {}="{}"'.format(key, _val)
 
             # Pass special job requirement values
             arg_str += ' {}="{}"'.format(self._VAR_INT_RAM, ram[i])
