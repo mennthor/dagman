@@ -4,6 +4,13 @@ from ._base_job_creator import BaseJobCreator
 import os
 
 
+_EXT_SUB = ".sub"
+_EXT_SH = ".sh"
+_EXT_CFG = ".config"
+_EXT_JOBS = ".jobs"
+_EXT_START = ".start.sh"
+
+
 class DAGManJobCreator(BaseJobCreator):
     """
     DAGManJobCreator
@@ -62,24 +69,24 @@ class DAGManJobCreator(BaseJobCreator):
 
         In the end, the job dir includes for N generated jobs:
 
-        - A single ``jobname.dag.config`` file including global configuration
+        - A single ``jobname.config`` file including global configuration
           for the scheduler (args given at constructor)
-        - A single ``jobname.dag.jobs`` file listing all jobs and where to find
+        - A single ``jobname.jobs`` file listing all jobs and where to find
           the jobfiles for the scheduler
-        - A single ``jobname.dag.start.sh`` shell script containing the common
+        - A single ``jobname.start.sh`` shell script containing the common
           command to submit the job to the scheduler (on the submit node). This
           does not have to be used, it's just that I always keep forgetting the
           proper command, so it got bundled too.
           It is made executable and passes all further cmds given on script
           invocation to ``condor_submit_dag``, eg.
-          ``./jobname.dag.start.sh -max_idle 100``.
+          ``./jobname.start.sh -max_idle 100``.
         - N ``jobname_suffix.sh`` shell scripts with the actual command, where
           suffix is zero padded from 1 to N.
         - N ``jobname_suffix.sub`` submitter scripts with the scheduler
           commands, where suffix is zero padded from 1 to N.
 
-        The scheduler reads the global config ``jobname.dag.config``, then looks
-        up the required jobs from ``jobname.dag.jobs`` and for each job it
+        The scheduler reads the global config ``jobname.config``, then looks
+        up the required jobs from ``jobname.jobs`` and for each job it
         starts, it uses the ``jobname_suffix.sub`` file to load the job
         parameters and then each submit file simply states to execute the
         corresponding ``jobname_suffix.sh`` script, in which the actual
@@ -185,14 +192,14 @@ class DAGManJobCreator(BaseJobCreator):
                 for extra_arg in extra_sub_args:
                     s.append(extra_arg)
 
-            s.append("arguments      = {}.sh".format(job_i_fname))
+            s.append("arguments      = {}{}".format(job_i_fname, _EXT_SH))
             s.append("queue")
 
-            with open(job_i_fname + ".sub", "w") as f:
+            with open(job_i_fname + _EXT_SUB, "w") as f:
                 f.write("\n".join(s))
         # Return last filename for summary output
         return os.path.basename(
-            job_i_fname + ".sub").replace(
+            job_i_fname + _EXT_SUB).replace(
                 "{:d}".format(njobs - 1), "[0-{:d}]".format(njobs - 1))
 
     def _write_job_shell_scripts(self, job_exe, job_name, job_dir, job_args,
@@ -202,9 +209,9 @@ class DAGManJobCreator(BaseJobCreator):
         """
         for i in range(njobs):
             job_i = self._append_id(job_name, i, njobs)
-            path_i = os.path.join(job_dir, "{}".format(job_i) + ".sh")
+            path_i = os.path.join(job_dir, "{}".format(job_i) + _EXT_SH)
 
-            s = ["set -e"]  # For the rescue we want it to fail
+            s = ["set -euo pipefail"]  # Fail cmd, pipe segments and unknown var
             s.append("echo")
             s.append("echo 'Start: ' `date`")
             s.append("echo")
@@ -255,10 +262,10 @@ class DAGManJobCreator(BaseJobCreator):
         s = []
         for i in range(njobs):
             job_i = self._append_id(job_name, i, njobs)
-            path_i = os.path.join(job_dir, "{}".format(job_i) + ".sub")
+            path_i = os.path.join(job_dir, "{}".format(job_i) + _EXT_SUB)
             s.append("JOB {} {}".format(job_i, path_i))
 
-        path = os.path.join(job_dir, job_name + ".dag.jobs")
+        path = os.path.join(job_dir, job_name + _EXT_JOBS)
         with open(path, "w") as f:
             f.write("\n".join(s))
         return os.path.basename(path)  # Return for summary output
@@ -268,7 +275,7 @@ class DAGManJobCreator(BaseJobCreator):
         Write the 'dagman.config' file, containin steering data for the job
         distribution.
         """
-        path = os.path.join(job_dir, job_name + ".dag.config")
+        path = os.path.join(job_dir, job_name + _EXT_JOBS)
         with open(path, "w") as f:
             for cfg_name, val in self._dag_config.items():
                 f.write("{}={}\n".format(cfg_name.upper(), val))
@@ -278,9 +285,9 @@ class DAGManJobCreator(BaseJobCreator):
         """
         Writes a script to execute on the submitter to starts all jobs.
         """
-        path = os.path.join(job_dir, job_name + ".dag.start.sh")
-        dag_conf = os.path.join(job_dir, job_name + ".dag.config")
-        dag_jobs = os.path.join(job_dir, job_name + ".dag.jobs")
+        path = os.path.join(job_dir, job_name + _EXT_START)
+        dag_conf = os.path.join(job_dir, job_name + _EXT_CFG)
+        dag_jobs = os.path.join(job_dir, job_name + _EXT_JOBS)
         with open(path, "w") as f:
             # Use a "$@" to inject more params manually if needed later
             s = ["condor_submit_dag", "-config", dag_conf, '"$@"', dag_jobs]
@@ -360,25 +367,25 @@ class DAGManJobCreatorCompact(BaseJobCreator):
 
         In the end, the job dir includes for N generated jobs:
 
-        - A single ``jobname.dag.config`` file including global configuration
+        - A single ``jobname.config`` file including global configuration
           for the scheduler (args given at constructor)
-        - A single ``jobname.dag.jobs`` file listing for all jobs where to find
+        - A single ``jobname.jobs`` file listing for all jobs where to find
           the jobfiles and what arguments to pass for the scheduler
-        - A single ``jobname.dag.start.sh`` shell script containing the common
+        - A single ``jobname.start.sh`` shell script containing the common
           command to submit the job to the scheduler (on the submit node). This
           does not have to be used, it's just that I always keep forgetting the
           proper command, so it got bundled too.
           It is made executable and passes all further cmds given on script
           invocation to ``condor_submit_dag``, eg.
-          ``./jobname.dag.start.sh -max_idle 100``.
+          ``./jobname.start.sh -max_idle 100``.
         - A single ``jobname_suffix.sh`` shell script with the actual command
           that will run for each job. Arguments are passed to this script.
         - A single ``jobname_suffix.sub`` submitter scripts with the scheduler
           commands, passing on the arguments to the shell script and setting up
           each job's requirements.
 
-        The scheduler reads the global config ``jobname.dag.config``, then looks
-        up the required jobs from ``jobname.dag.jobs`` and for each job it
+        The scheduler reads the global config ``jobname.config``, then looks
+        up the required jobs from ``jobname.jobs`` and for each job it
         starts, it uses the ``jobname_suffix.sub`` file to load the job
         parameters and then each submit file simply states to execute the
         corresponding ``jobname_suffix.sh`` script, in which the actual
@@ -435,8 +442,8 @@ class DAGManJobCreatorCompact(BaseJobCreator):
         # Check for reserved keywords in job args
         for key in job_args:
             if key in self._VAR_INT_ALL:
-                raise KeyError("Can't use reserved keyword '__SUB_RAM__' as "
-                               "a script argument, please rename.")
+                raise KeyError("Can't use reserved keyword '{}' as a script "
+                               " argument, please rename.".format(key))
 
         # Create and write the job, submitter and infrastructure files
         _sn_sub = self._write_submit_scripts(
@@ -507,28 +514,30 @@ class DAGManJobCreatorCompact(BaseJobCreator):
         # Now we need to grab the job args as stated in the job DAG file. The
         # exanped form is then like: `--key=$(key)` and when a job is sumitted
         # DAGMan replaces $(key) with the actual value written in the arg file.
+        # See 'New Syntax' infos at
+        #   htcondor.readthedocs.io/en/latest/users-manual/dagman-workflows.html#special-characters-within-vars-string-definitions
         arg_str = ""
         for key in job_args:
             # '__FLAG__' value indicates a bool flag -> only pass the name
             if job_args[key][0] == "__FLAG__":  # Assume all are same
                 arg_str += " --$({})".format(key)
             else:
-                arg_str += " --{}=$({})".format(key, key)
-        s.append("arguments      = {}.sh{}".format(job_fname, arg_str))
+                arg_str += " --{}='$({})'".format(key, key)
+        s.append('arguments      = "{}.sh{}"'.format(job_fname, arg_str))
         s.append("queue")
 
-        script_name = job_fname + ".sub"
+        script_name = job_fname + _EXT_SUB
         with open(script_name, "w") as f:
             f.write("\n".join(s))
 
-        return script_name  # Return for summary output
+        return os.path.basename(script_name)  # Return for summary output
 
     def _write_job_shell_scripts(
             self, job_exe, job_name, job_dir, job_setup_pre, job_setup_post):
         """
         Write a standalone shell script passing all the options to the callable.
         """
-        s = ["set -e\n"]  # For the rescue we want it to fail
+        s = ["set -euo pipefail\n"]  # Fail cmd, pipe segments and unknown var
         s.append("echo 'Start: ' `date`")
         s.append("echo")
 
@@ -559,7 +568,7 @@ class DAGManJobCreatorCompact(BaseJobCreator):
         s.append("echo 'Finished: ' `date`")
         s.append("echo")  # Finishing new line
 
-        script_name = os.path.join(job_dir, "{}".format(job_name) + ".sh")
+        script_name = os.path.join(job_dir, "{}".format(job_name) + _EXT_SH)
         with open(script_name, "w") as f:
             f.write("\n".join(s))
 
@@ -573,15 +582,24 @@ class DAGManJobCreatorCompact(BaseJobCreator):
         for i in range(njobs):
             job_i = self._append_id(job_name, i, njobs)
             # Same submit file for  each job (as generated further above)
-            sub_script = os.path.join(job_dir, job_name + ".sub")
+            sub_script = os.path.join(job_dir, job_name + _EXT_SUB)
             s.append("JOB {} {}".format(job_i, sub_script))
 
             # Now the argument list line
             arg_str = "VARS {}".format(job_i)
             for key, val in job_args.items():
-                # All args must be within double quotes so we need to quote
-                # all already existing double quotes in the actual parameters
-                _val = val[i].replace('"', '\\"')  # Becomes \" in the DAG file
+                # All sub args must be within double quotes so we need to quote
+                # all already existing double and single quotes in the actual
+                # parameters. In the DAG file these become `\"\"` and `''`
+                # [...] in both syntaxes, double quote marks require two levels
+                # of escaping: one level is for the parsing of the DAG input
+                # file, and the other level is for passing the resulting value
+                # through condor_submit.
+                # [...] to pass a single quote as part of an argument, escape it
+                # with another single quote [...]
+                _val = val[i]  # .replace("\\", "\\\\")
+                _val = _val.replace('"', '\\"\\"')
+                _val = _val.replace("'", "''")
                 arg_str += ' {}="{}"'.format(key, _val)
 
             # Pass special job requirement values
@@ -589,7 +607,7 @@ class DAGManJobCreatorCompact(BaseJobCreator):
             arg_str += ' {}="{}"'.format(self._VAR_INT_JOB_ID, job_i)
             s.append(arg_str)
 
-        script_name = os.path.join(job_dir, job_name + ".dag.jobs")
+        script_name = os.path.join(job_dir, job_name + _EXT_JOBS)
         with open(script_name, "w") as f:
             f.write("\n".join(s))
 
@@ -600,7 +618,7 @@ class DAGManJobCreatorCompact(BaseJobCreator):
         Write the 'dagman.config' file, containin steering data for the job
         distribution.
         """
-        script_name = os.path.join(job_dir, job_name + ".dag.config")
+        script_name = os.path.join(job_dir, job_name + _EXT_CFG)
         with open(script_name, "w") as f:
             for cfg_name, val in self._dag_config.items():
                 f.write("{}={}\n".format(cfg_name.upper(), val))
@@ -611,9 +629,9 @@ class DAGManJobCreatorCompact(BaseJobCreator):
         """
         Writes a script to execute on the submitter to starts all jobs.
         """
-        script_name = os.path.join(job_dir, job_name + ".dag.start.sh")
-        dag_conf = os.path.join(job_dir, job_name + ".dag.config")
-        dag_jobs = os.path.join(job_dir, job_name + ".dag.jobs")
+        script_name = os.path.join(job_dir, job_name + _EXT_START)
+        dag_conf = os.path.join(job_dir, job_name + _EXT_CFG)
+        dag_jobs = os.path.join(job_dir, job_name + _EXT_JOBS)
         with open(script_name, "w") as f:
             # Use a "$@" to inject more params manually if needed later
             s = ["condor_submit_dag", "-config", dag_conf, '"$@"', dag_jobs]
