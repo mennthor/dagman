@@ -598,8 +598,11 @@ class DAGManJobCreatorCompact(BaseJobCreator):
                 # [...] to pass a single quote as part of an argument, escape it
                 # with another single quote [...]
                 _val = val[i]  # .replace("\\", "\\\\")
-                _val = _val.replace('"', '\\"\\"')
-                _val = _val.replace("'", "''")
+                try:
+                    _val = _val.replace('"', '\\"\\"')
+                    _val = _val.replace("'", "''")
+                except AttributeError:
+                    pass  # No string
                 arg_str += ' {}="{}"'.format(key, _val)
 
             # Pass special job requirement values
